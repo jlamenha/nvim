@@ -268,6 +268,16 @@ require('lazy').setup({
     },
   },
 
+  -- makes matching '[' '(' and '{'
+  {
+    'jiangmiao/auto-pairs',
+    event = 'InsertEnter',
+    config = function()
+      require('auto-pairs').setup()
+    end,
+  },
+
+  -- file explorer for nvim: <leader>o
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
@@ -279,6 +289,7 @@ require('lazy').setup({
       require('nvim-tree').setup {}
     end,
   },
+
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
