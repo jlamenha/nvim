@@ -108,6 +108,9 @@ vim.g.have_nerd_font = true
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
+-- no line wrapping
+vim.opt.wrap = false
+
 -- Make line numbers default
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
@@ -191,6 +194,8 @@ vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
 vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
 vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
+vim.keymap.set('n', '<A-l>', ':tabnext +<CR>')
+vim.keymap.set('n', '<A-h>', ':tabnext -<CR>')
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
 --
@@ -200,11 +205,26 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- move selected text
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
-vim.keymap.set('n', '<leader>o', ':NvimTreeToggle<CR>')
+-- undo tree
+vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle, { desc = 'Undo tree toggle' })
 
+-- select all in visual more
+vim.keymap.set('n', '<C-a', 'ggVG')
+
+-- file exploser ket
+vim.keymap.set('n', '<leader>et', ':NvimTreeToggle<CR>', { desc = '[E]xplorer [T]oggle' })
+vim.keymap.set('n', '<leader>ef', ':NvimTreeFocus<CR>', { desc = '[E]xplorer [F]ocus' })
+
+--toggle termina;
+vim.keymap.set('n', '<leader>`ta', ':ToggleTermToggleAll<CR>', { desc = '[T]erminal [T]oggle [A]ll', noremap = true })
+vim.keymap.set('n', '<leader>`ot', ':ToggleTerm direction=tab<CR>', { desc = '[T]erminal [O]pen [T]ab', noremap = true })
+vim.keymap.set('n', '<leader>`oh', ':ToggleTerm direction=horizontal<CR>', { desc = '[T]erminal [O]pen [H]orizonal', noremap = true })
 -- Highlight when yanking (copying) text
 
 --  See `:help vim.highlight.on_yank()`
@@ -268,15 +288,6 @@ require('lazy').setup({
     },
   },
 
-  -- makes matching '[' '(' and '{'
-  {
-    'jiangmiao/auto-pairs',
-    event = 'InsertEnter',
-    config = function()
-      require('auto-pairs').setup()
-    end,
-  },
-
   -- file explorer for nvim: <leader>o
   {
     'nvim-tree/nvim-tree.lua',
@@ -290,6 +301,50 @@ require('lazy').setup({
     end,
   },
 
+  -- makes matching '[' '(' and '{'
+  {
+    'jiangmiao/auto-pairs',
+    event = 'InsertEnter',
+  },
+  -- terminal plugin
+  {
+    -- amongst your other plugins
+    { 'akinsho/toggleterm.nvim', version = '*', config = true },
+  },
+  -- Rainbow Highlighting
+  {
+    'HiPhish/rainbow-delimiters.nvim',
+    config = function()
+      local rainbow_delimiters = require 'rainbow-delimiters'
+
+      vim.g.rainbow_delimiters = {
+        strategy = {
+          [''] = rainbow_delimiters.strategy['global'],
+          vim = rainbow_delimiters.strategy['local'],
+        },
+        query = {
+          [''] = 'rainbow-delimiters',
+          latex = 'rainbow-blocks',
+        },
+        highlight = {
+          'RainbowDelimiterRed',
+          'RainbowDelimiterYellow',
+          'RainbowDelimiterBlue',
+          'RainbowDelimiterOrange',
+          'RainbowDelimiterGreen',
+          'RainbowDelimiterViolet',
+          'RainbowDelimiterCyan',
+        },
+      }
+    end,
+  },
+  -- undo tree
+  {
+    'mbbill/undotree',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+  },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -299,6 +354,7 @@ require('lazy').setup({
   --  event = 'VimEnter'
   --
   -- which loads which-key before all the UI elements are loaded. Events can be
+  --
   -- normal autocommands events (`:help autocmd-events`).
   --
   -- Then, because we use the `config` key, the configuration only runs
@@ -313,8 +369,9 @@ require('lazy').setup({
 
       -- Document existing key chains
       require('which-key').add {
-        { '<leader>o', group = '[O]pen explorer' },
         { '<leader>c', group = '[C]ode' },
+        { '<leader>`', group = '[T]erminal' },
+        { '<leader>e', group = '[E]plorer' },
         { '<leader>d', group = '[D]ocument' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
@@ -475,7 +532,7 @@ require('lazy').setup({
       -- LSP stands for Language Server Protocol. It's a protocol that helps editors
       -- and language tooling communicate in a standardized fashion.
       --
-      -- In general, you have a "server" which is some tool built to understand a particular
+      -- In general, you have a "server" wThich is some tool built to understand a particular
       -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
       -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
       -- processes that communicate with some "client" - in this case, Neovim!
@@ -694,9 +751,11 @@ require('lazy').setup({
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
-        --
+        typescript = { 'prettier' },
+        c = { 'prettier' },
+        cpp = { 'prettier' },
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -879,7 +938,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'sql', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -918,7 +977,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
