@@ -222,9 +222,9 @@ vim.keymap.set('n', '<leader>et', ':NvimTreeToggle<CR>', { desc = '[E]xplorer [T
 vim.keymap.set('n', '<leader>ef', ':NvimTreeFocus<CR>', { desc = '[E]xplorer [F]ocus' })
 
 --toggle termina;
-vim.keymap.set('n', '<leader>`ta', ':ToggleTermToggleAll<CR>', { desc = '[T]erminal [T]oggle [A]ll', noremap = true })
-vim.keymap.set('n', '<leader>`ot', ':ToggleTerm direction=tab<CR>', { desc = '[T]erminal [O]pen [T]ab', noremap = true })
-vim.keymap.set('n', '<leader>`oh', ':ToggleTerm direction=horizontal<CR>', { desc = '[T]erminal [O]pen [H]orizonal', noremap = true })
+vim.keymap.set('n', '<leader>`a', ':ToggleTermToggleAll<CR>', { desc = '[T]erminal [T]oggle [A]ll', noremap = true })
+vim.keymap.set('n', '<leader>`t', ':ToggleTerm direction=tab<CR>', { desc = '[T]erminal [O]pen [T]ab', noremap = true })
+vim.keymap.set('n', '<leader>`h', ':ToggleTerm direction=horizontal<CR>', { desc = '[T]erminal [O]pen [H]orizonal', noremap = true })
 -- Highlight when yanking (copying) text
 
 --  See `:help vim.highlight.on_yank()`
@@ -741,7 +741,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
+        local disable_filetypes = { ocamle = true }
         return {
           timeout_ms = 500,
           lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
@@ -752,8 +752,8 @@ require('lazy').setup({
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         typescript = { 'prettier' },
-        c = { 'prettier' },
-        cpp = { 'prettier' },
+        c = { 'clang-format' },
+        cpp = { 'clang-format' },
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
