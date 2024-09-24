@@ -787,13 +787,10 @@ require('lazy').setup({
   },
   -- sql stuff
   {
+    'kristijanhusak/vim-dadbod-ui',
     'tpope/vim-dadbod',
-    dependencies = {
-      'kristijanhusak/vim-dadbod-ui', -- optional UI
-      'kristijanhusak/vim-dadbod-completion', -- for autocompletion in SQL files
-    },
+    'kristijanhusak/vim-dadbod-completion',
   },
-
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
@@ -933,6 +930,12 @@ require('lazy').setup({
             end
           end, { 'i', 's' }),
 
+          cmp.setup.filetype({ 'sql' }, {
+            sources = {
+              { name = 'vim-dadbod-completion' },
+              { name = 'buffer' },
+            },
+          }),
           -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
@@ -942,7 +945,7 @@ require('lazy').setup({
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
-          { name = 'vim-dadbod-completion' },
+          -- { name = 'vim-dadbod-completion' },
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
