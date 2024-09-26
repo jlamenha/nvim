@@ -162,7 +162,7 @@ vim.opt.splitbelow = true
 --
 -- -- Set Oracle database connection
 -- vim.g.db = 'oracle://mina:password@localhost:1521/XE'
-
+vim.g.db = 'jdbc:oracle:thin:mboktor/MBOKTOR@//csorcl.cs.wpi.edu:1521/orcl.cs.wpi.edu'
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
@@ -228,6 +228,11 @@ vim.keymap.set('n', '<C-a', 'ggVG')
 -- file exploser ket
 vim.keymap.set('n', '<leader>et', ':NvimTreeToggle<CR>', { desc = '[E]xplorer [T]oggle' })
 vim.keymap.set('n', '<leader>ef', ':NvimTreeFocus<CR>', { desc = '[E]xplorer [F]ocus' })
+
+-- markdown toggle
+
+vim.keymap.set('n', '<leader>ms', ':MarkdownPreview<CR>')
+vim.keymap.set('n', '<leader>me', ':MarkdownPreviewStop<CR>')
 
 --toggle termina;
 vim.keymap.set('n', '<leader>`a', ':ToggleTermToggleAll<CR>', { desc = '[T]erminal [T]oggle [A]ll', noremap = true })
@@ -300,7 +305,9 @@ require('lazy').setup({
       },
     },
   },
-
+  { 'mfussenegger/nvim-jdtls', cmd = {
+    vim.fn.expand '$HOME/.local/share/nvim/mason/bin/jdtls',
+  } },
   {
     'mfussenegger/nvim-dap',
     dependencies = {
@@ -425,6 +432,7 @@ require('lazy').setup({
 
       -- Document existing key chains
       require('which-key').add {
+        { '<leader>m', group = '[M]arkdown' },
         { '<leader>c', group = '[C]ode' },
         { '<leader>`', group = '[T]erminal' },
         { '<leader>e', group = '[E]plorer' },
@@ -720,7 +728,11 @@ require('lazy').setup({
         clangd = {},
         gopls = {},
         checkmake = {},
-        -- pyright = {},
+        ast_grep = {},
+        java_language_server = {},
+        pyright = {},
+        jdtls = {},
+
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -729,9 +741,8 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- typescript-language-server = {},
-        sqls = {},
-        codespell = {},
-        --
+        -- sqls = {},
+        -- codespell = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -764,9 +775,12 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'prettier',
         'clangd',
+        'clang-format',
         'typescript-language-server',
         'sqlfmt',
-        'sqls',
+        'ast-grep',
+        'jdtls',
+        -- 'sqls',
         'codespell',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -785,11 +799,40 @@ require('lazy').setup({
       }
     end,
   },
+  -- markdown preview
+  {
+    'iamcco/markdown-preview.nvim',
+    build = 'cd app && npm install',
+    ft = 'markdown',
+    config = function()
+      vim.g.mkdp_auto_start = 1
+    end,
+  },
   -- sql stuff
   {
     'kristijanhusak/vim-dadbod-ui',
-    'tpope/vim-dadbod',
-    'kristijanhusak/vim-dadbod-completion',
+    dependencies = {
+      { 'tpope/vim-dadbod', lazy = true },
+      { 'kristijanhusak/vim-dadbod-completion', ft = { 'sql', 'mysql', 'plsql' }, lazy = true }, -- Optional
+    },
+    cmd = {
+      'DBUI',
+      'DBUIToggle',
+      'DBUIAddConnection',
+      'DBUIFindBuffer',
+    },
+    init = function()
+      -- Your DBUI configuration
+      vim.g.db_ui_use_nerd_fonts = 1
+    end,
+  },
+  {
+    'xemptuous/sqlua.nvim',
+    lazy = true,
+    cmd = 'SQLua',
+    config = function()
+      require('sqlua').setup()
+    end,
   },
   { -- Autoformat
     'stevearc/conform.nvim',
@@ -818,8 +861,10 @@ require('lazy').setup({
         }
       end,
       formatters_by_ft = {
-        sql = { 'sqlfmt' },
+        sql = { 'sqls' },
         lua = { 'stylua' },
+        bash = { 'shfmt' },
+        java = { 'clang-format' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         typescript = { 'prettierd', 'prettier' },
@@ -930,12 +975,12 @@ require('lazy').setup({
             end
           end, { 'i', 's' }),
 
-          cmp.setup.filetype({ 'sql' }, {
-            sources = {
-              { name = 'vim-dadbod-completion' },
-              { name = 'buffer' },
-            },
-          }),
+          -- cmp.setup.filetype({ 'sql' }, {
+          --   sources = {
+          --     { name = 'vim-dadbod-completion' },
+          --     { name = 'buffer' },
+          --   },
+          -- }),
           -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
