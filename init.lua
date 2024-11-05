@@ -109,7 +109,7 @@ vim.g.have_nerd_font = true
 --  For more options, you can see `:help option-list`
 
 -- no line wrapping
-vim.opt.wrap = false
+-- vim.opt.wrap = false
 
 -- Make line numbers default
 vim.opt.number = true
@@ -196,6 +196,9 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
+-- copy whole file
+vim.keymap.set('n', '<leader>cc', 'ggyG', { noremap = true, silent = true })
+
 -- TIP: Disable arrow keys in normal mode
 vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
 vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
@@ -218,6 +221,10 @@ vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
 vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
+
+-- run java file
+vim.api.nvim_set_keymap('n', '<leader>rj', ':!mvn clean package && mvn exec:java<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>rw', ':TermExec direction=tab cmd="pnpm run dev"<CR>', { noremap = true, silent = true })
 
 -- undo tree
 vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle, { desc = 'Undo tree toggle' })
@@ -305,53 +312,65 @@ require('lazy').setup({
       },
     },
   },
-  { 'mfussenegger/nvim-jdtls', cmd = {
-    vim.fn.expand '$HOME/.local/share/nvim/mason/bin/jdtls',
-  } },
+  -- java
   {
-    'mfussenegger/nvim-dap',
-    dependencies = {
-      'rcarriga/nvim-dap-ui',
-      'nvim-neotest/nvim-nio',
-      'theHamsta/nvim-dap-virtual-text',
-      'williamboman/mason.nvim',
-    },
+    'mfussenegger/nvim-jdtls',
     config = function()
-      local dap = require 'dap'
-      local ui = require 'dapui'
+      -- Function to set up JDT LS for Java files
+      local function setup_jdtls()
+        local jdtls = require 'jdtls'
 
-      require('dapui').setup()
-      require('nvim-dap-virtual-text').setup()
+        -- Set the workspace directory based on the project directory
+        local workspace_dir = vim.fn.fnamemodify(vim.fn.getcwd(), ':p:h:t')
 
-      vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint, { desc = '[B]reak points' })
+        -- Define the configuration for the Java language server
+        local config = {
+          cmd = {
+            'java', -- Ensure Java is available in your system path
+            '-Declipse.application=org.eclipse.jdt.ls.core.id1',
+            '-Dosgi.bundles.defaultStartLevel=4',
+            '-Declipse.product=org.eclipse.jdt.ls.core.product',
+            '-Dlog.protocol=true',
+            '-Dlog.level=ALL',
+            '-Xms1g',
+            '--add-modules=ALL-SYSTEM',
+            '--add-opens',
+            'java.base/java.util=ALL-UNNAMED',
+            '--add-opens',
+            'java.base/java.lang=ALL-UNNAMED',
+            '-jar',
+            vim.fn.glob '~/.local/share/nvim/mason/packages/jdtls/plugins/org.eclipse.equinox.launcher_*.jar',
+            '-configuration',
+            '~/.local/share/nvim/mason/packages/jdtls/config_linux', -- Adjust path for your OS
+            '-data',
+            workspace_dir,
+          },
+          root_dir = require('jdtls.setup').find_root { 'gradlew', 'mvnw', '.git' },
+          settings = {
+            java = {
+              -- Add additional Java settings here if needed
+            },
+          },
+          init_options = {
+            bundles = {
+              vim.fn.glob '~/.local/share/nvim/mason/packages/java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar',
+            },
+          },
+        }
 
-      -- Eval var under cursor
-      vim.keymap.set('n', '<leader>?', function()
-        require('dapui').eval(nil, { enter = true })
-      end)
-
-      vim.keymap.set('n', '<F1>', dap.continue)
-      vim.keymap.set('n', '<F2>', dap.step_into)
-      vim.keymap.set('n', '<F3>', dap.step_over)
-      vim.keymap.set('n', '<F4>', dap.step_out)
-      vim.keymap.set('n', '<F5>', dap.step_back)
-      vim.keymap.set('n', '<F12>', dap.restart)
-
-      dap.listeners.before.attach.dapui_config = function()
-        ui.open()
+        -- Start or attach the JDT LS
+        jdtls.start_or_attach(config)
       end
-      dap.listeners.before.launch.dapui_config = function()
-        ui.open()
-      end
-      dap.listeners.before.event_terminated.dapui_config = function()
-        ui.close()
-      end
-      dap.listeners.before.event_exited.dapui_config = function()
-        ui.close()
-      end
+
+      -- Autocmd to start JDT LS when Java files are opened
+      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile' }, {
+        pattern = { '*.java' },
+        callback = function()
+          setup_jdtls()
+        end,
+      })
     end,
-  },
-  -- file explorer for nvim: <leader>o
+  }, -- file explorer for nvim: <leader>o
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
@@ -364,7 +383,6 @@ require('lazy').setup({
     end,
   },
 
-  -- makes matching '[' '(' and '{'
   {
     'jiangmiao/auto-pairs',
     event = 'InsertEnter',
@@ -729,7 +747,6 @@ require('lazy').setup({
         gopls = {},
         checkmake = {},
         ast_grep = {},
-        java_language_server = {},
         pyright = {},
         jdtls = {},
 
@@ -875,7 +892,7 @@ require('lazy').setup({
       },
     },
   },
-
+  { 'hrsh7th/cmp-nvim-lsp' },
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
     event = 'InsertEnter',
@@ -910,6 +927,8 @@ require('lazy').setup({
       --  nvim-cmp does not ship with all sources by default. They are split
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
+      'hrsh7th/cmp-vsnip',
+      'hrsh7th/vim-vsnip',
       'hrsh7th/cmp-path',
     },
     config = function()
@@ -992,6 +1011,7 @@ require('lazy').setup({
           },
           -- { name = 'vim-dadbod-completion' },
           { name = 'nvim_lsp' },
+          { name = 'vsnip' },
           { name = 'luasnip' },
           { name = 'path' },
         },
@@ -1057,8 +1077,18 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+  {
+    'windwp/nvim-ts-autotag',
+    opts = {
+      enable_close = true, -- Auto close tags
+      enable_rename = true, -- Auto rename pairs of tags
+      enable_close_on_slash = false, -- Auto close on trailing </
+    },
+  },
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    -- 'windwp/nvim-ts-autotag',
     build = ':TSUpdate',
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'sql', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
@@ -1072,6 +1102,9 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+    },
+    autotag = {
+      enable = true,
     },
     config = function(_, opts)
       -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
