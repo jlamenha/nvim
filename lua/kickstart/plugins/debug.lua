@@ -92,10 +92,18 @@ return {
     dap.configurations.rust = {
       {
         name = 'Launch file',
-        type = 'lldb',
+        type = 'codelldb',
         request = 'launch',
         program = function()
-          return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+          local executable_path = vim.fn.getcwd() .. '/target/debug/' .. vim.fn.fnamemodify(vim.fn.getcwd(), ':t')
+
+          -- Check if the executable exists, if not, build it
+          if vim.fn.filereadable(executable_path) == 0 then
+            print 'Building project...'
+            vim.fn.system 'cargo build'
+          end
+
+          return executable_path
         end,
         cwd = '${workspaceFolder}',
         stopOnEntry = false,
