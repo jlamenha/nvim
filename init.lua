@@ -264,13 +264,19 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not vim.uv.fs_stat(lazypath) then
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
   local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
   if vim.v.shell_error ~= 0 then
-    error('Error cloning lazy.nvim:\n' .. out)
+    vim.api.nvim_echo({
+      { 'Failed to clone lazy.nvim:\n', 'ErrorMsg' },
+      { out, 'WarningMsg' },
+      { '\nPress any key to exit...' },
+    }, true, {})
+    vim.fn.getchar()
+    os.exit(1)
   end
-end ---@diagnostic disable-next-line: undefined-field
+end
 vim.opt.rtp:prepend(lazypath)
 
 -- [[ Configure and install plugins ]]
@@ -1096,15 +1102,15 @@ require('lazy').setup({
       auto_install = true,
       highlight = {
         enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+
         --  If you are experiencing weird indenting issues, add the language to
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
-    },
-    autotag = {
-      enable = true,
+      autotag = {
+        enable = true,
+      },
     },
     config = function(_, opts)
       -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
@@ -1167,3 +1173,8 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+vim.api.nvim_create_user_command('RemoveZoneIdentifiers', function()
+  -- Execute the shell command to find and remove Zone.Identifier files
+  os.execute "find . -type f -name 'Zone.Identifier' -exec rm -f {} +"
+end, {})
